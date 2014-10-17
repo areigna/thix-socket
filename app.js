@@ -29,6 +29,8 @@ function originIsAllowed(origin) {
   return true;
 }
 
+var connections = [];
+
 wsServer.on('request', function(request) {
     if (!originIsAllowed(request.origin)) {
       // Make sure we only accept requests from an allowed origin
@@ -38,15 +40,13 @@ wsServer.on('request', function(request) {
     }
 
     var connection = request.accept('echo-protocol', request.origin);
+    connections.push(connection);
+
     console.log((new Date()) + ' Connection accepted.');
     connection.on('message', function(message) {
-        if (message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);
-            connection.sendUTF(message.utf8Data);
-        }
-        else if (message.type === 'binary') {
-            console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
-            connection.sendBytes(message.binaryData);
+        console.log('Received Message: ' + message.utf8Data);
+        for(var i = 0 ;i < connections.length; i ++){
+            connections[i].sendUTF(message.utf8Data);
         }
     });
     connection.on('close', function(reasonCode, description) {

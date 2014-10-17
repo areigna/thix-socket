@@ -24,10 +24,11 @@ client.on('connect', function(connection) {
         if (connection.connected) {
             var number = Math.round(Math.random() * 0xFFFFFF);
             connection.sendUTF(number.toString());
-            setTimeout(sendNumber, 1000);
+            setTimeout(sendNumber, 3000);
         }
     }
     sendNumber();
 });
 
 client.connect('ws://localhost:8111/', 'echo-protocol');
+//client.connect('ws://ec2-54-197-197-221.compute-1.amazonaws.com:8111/', 'echo-protocol');
