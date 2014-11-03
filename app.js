@@ -124,11 +124,13 @@ function send(content, id){
     var msg = typeof content === 'object' ? JSON.stringify(content) : content ;
     if(id){
         connections[id].sendUTF(msg);
+        console.log('returned', content);
     }
     else{
         for(x in connections){
             connections[x].sendUTF(msg);
         }
+        console.log('broadcasted', content);
     }
 }
 
