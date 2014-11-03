@@ -29,7 +29,8 @@ function originIsAllowed(origin) {
   return true;
 }
 
-var connections = [];
+var connections = {};
+var boats = [];
 
 wsServer.on('request', function(request) {
     if (!originIsAllowed(request.origin)) {
@@ -39,17 +40,110 @@ wsServer.on('request', function(request) {
       return;
     }
 
+    //creating new connection
     var connection = request.accept('echo-protocol', request.origin);
-    connections.push(connection);
 
-    console.log((new Date()) + ' Connection accepted.');
+    //create an id for connection
+    var id = Date.now();
+    connection.id = id;
+    connections[id+''] = connection;
+    console.log('added connection', id);
+
+    //on message
     connection.on('message', function(message) {
         console.log('Received Message: ' + message.utf8Data);
-        for(var i = 0 ;i < connections.length; i ++){
-            connections[i].sendUTF(message.utf8Data);
-        }
+
+        var obj = JSON.parse(message.utf8Data),
+            action = obj.action;
+
+        if(action === 'init'){onInit(obj, connection); }
+        else if(action === 'move'){onMove(obj); }
+        else if(action === 'location'){onLocation(obj); }
+        else if(action === 'leave'){onLocation(obj); }
+
     });
+
+    //on close
     connection.on('close', function(reasonCode, description) {
-        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+        deleteConnection(connection.id);
+        deleteBoat(connection.boatId);
     });
 });
+
+
+/*
+new boat init
+- R(array[init])
+- B(init)
+- save array
+*/
+function onInit(obj, connection){
+    send(JSON.stringify(boats), connection.id);
+    send(JSON.stringify(obj));
+    //associate boat id with connection
+    connection.boatId = obj.id;
+
+    boats.push(obj);
+    console.log('added boat to array');
+    console.log(boats);
+}
+/*
+move the boat
+- B(move)
+*/
+function onMove(obj){
+    send(obj);
+}
+/*
+change the location
+- add to array
+*/
+function onLocation(obj){
+    for(var i = 0 ;i < boats.length; i++){
+        if(boats[i].id === obj.id){
+            boats[i].property.location = obj.property.location;
+            console.log('boats:')
+            console.log(boats);
+            return;
+        }
+    }
+}
+/*
+leave the scene
+- B(leave)
+- remove from array
+*/
+function onLeave(obj){
+    send(obj);
+    deleteBoat(obj.id);
+}
+
+//broadcast to all connections or send to one person
+function send(content, id){
+    var msg = typeof content === 'object' ? JSON.stringify(content) : content ;
+    if(id){
+        connections[id].sendUTF(msg);
+    }
+    else{
+        for(x in connections){
+            connections[x].sendUTF(msg);
+        }
+    }
+}
+
+//delete the connection
+function deleteConnection(id){
+    delete connections[id];
+    console.log('deleted connection', id);
+}
+
+//delete the boat from boat array
+function deleteBoat(id){
+    for(var i = 0;i< boats.length;i ++){
+        if(boats[i].id === id){
+            boats.splice(i, 1);
+        }
+    } 
+    console.log('boats:');
+    console.log(boats);
+}

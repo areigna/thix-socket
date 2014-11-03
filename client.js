@@ -1,6 +1,8 @@
 var WebSocketClient = require('websocket').client;
 
 var client = new WebSocketClient();
+var id = (''+Date.now()).slice(-4);
+var isNew = true;
 
 client.on('connectFailed', function(error) {
     console.log('Connect Error: ' + error.toString());
@@ -16,18 +18,38 @@ client.on('connect', function(connection) {
     });
     connection.on('message', function(message) {
         if (message.type === 'utf8') {
-            console.log("Received: '" + message.utf8Data + "'");
+            console.log("Received: " + message.utf8Data);
         }
     });
 
-    function sendNumber() {
+    function sendLocation() {
         if (connection.connected) {
-            var number = Math.round(Math.random() * 0xFFFFFF);
-            connection.sendUTF(number.toString());
-            setTimeout(sendNumber, 3000);
+            var obj = {id: id, action: 'location', property: {location: Date.now()%100 } };
+            var msg = JSON.stringify(obj);
+            connection.sendUTF(msg);
+            console.log('sent '+ msg);
         }
     }
-    sendNumber();
+    function sendMove() {
+        if (connection.connected) {
+            var obj = {id: id, action: 'move', property: {location: Date.now()%3 - 1 } };
+            var msg = JSON.stringify(obj);
+            connection.sendUTF(msg);
+            console.log('sent '+ msg);
+        }
+    }
+    var obj = {
+        id: id,
+        action: 'init',
+        property: {
+            location: 20
+        }
+    };
+    var msg = JSON.stringify(obj);
+    connection.sendUTF(msg);
+    console.log('sent '+ msg);
+    setInterval(sendMove, 10000) ;
+    setInterval(sendLocation, 10000) ;
 });
 
 client.connect('ws://localhost:8111/', 'echo-protocol');
