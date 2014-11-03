@@ -60,6 +60,7 @@ wsServer.on('request', function(request) {
         else if(action === 'move'){onMove(obj); }
         else if(action === 'location'){onLocation(obj); }
         else if(action === 'leave'){onLocation(obj); }
+        else connection.sendUTF('invalid');
 
     });
 
@@ -101,7 +102,7 @@ change the location
 function onLocation(obj){
     for(var i = 0 ;i < boats.length; i++){
         if(boats[i].id === obj.id){
-            boats[i].property.location = obj.property.location;
+            boats[i].prop.location = obj.prop.location;
             console.log('boats:')
             console.log(boats);
             return;
